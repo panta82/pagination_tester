@@ -1,14 +1,19 @@
 const { Client } = require('pg');
 const Chance = require('chance');
 
-const { Options } = require('./options');
-const { Generator } = require('./generator');
+const { Options } = require('../lib/options');
+const { Generator } = require('../lib/generator');
 
-main();
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
 
 function main() {
   const options = new Options();
   options.loadFromEnv();
+
+  const count = Number(process.argv[2]) || 50;
 
   const client = new Client({
     user: options.pg_user,
@@ -28,6 +33,11 @@ function main() {
       return generator.migrate();
     })
     .then(() => {
-      return generator.generateData(1000);
+      console.log(`Generating ${count} records`);
+      return generator.generateData(count);
+    })
+    .finally(() => {
+      console.log(`Done`);
+      return client.end();
     });
 }
