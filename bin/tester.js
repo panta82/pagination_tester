@@ -12,8 +12,6 @@ function main() {
   const options = new Options();
   options.loadFromEnv();
 
-  const count = Number(process.argv[2]) || 50;
-
   const client = new Client({
     user: options.pg_user,
     host: options.pg_host,
