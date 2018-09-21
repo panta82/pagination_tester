@@ -91,7 +91,7 @@ SELECT to_json(COUNT(*))
 FROM __data__
 ```
 
-Programming challenge is impossible if returning native result sets and fairly easy with JSON-s (presuming a nodejs backend).
+Programming challenge is impossible if returning native result sets - `UNION ALL` must match all columns in 2 sets precisely, and how can we do that in a generic manner? If results are cast to JSON (as shown above), then it's fairly easy (presuming a nodejs backend).
 
 ### Results
 
@@ -132,16 +132,16 @@ Testing a complex query, sort on a unique index...
     [Page         16]     V1: 0.80 sec     V2: 0.40 sec     V3: 0.41 sec     V4: 0.41 sec
 ```
 
-### Thoughts
-
 **Variant 1** is generally the most stable and predictable of the bunch. It has good performance on low page counts and if indexes are present. It quickly deteriorates as page goes higher and if there are no indexes. 
 
 **Variants 2 and 3** are performing better than 1 on no indexes. With indexes, performance is very volatile. PG engine (9.6) can't seem to figure out how to optimize these plans properly.
 
-**Variant 4** has a constant penalty of JSON serialization and subqueries, but this is mostly visible on low page counts. On higher pages, it is both fast (fastest?) and consistent in its performance. It has the most complex query of the bunch and an esoteric result type which might not be suitable for all queries.
+**Variant 4** has a constant penalty of JSON serialization and subqueries, but this is mostly visible on low page counts. On higher pages, it is both fast (fastest?) and consistent in its performance.
+
+### Thoughts
 
 For a generic application, I think I would still go with **Variant 1**. It is well understood, and has solid consistent performance in the low page ranges, which is what most queries will be anyway.
 
 The only place where 2 queries instead of one is clearly felt is in Test 2, with non-indexed fields, where it is twice slower than any of the single query methods. But if this becomes a problem, it is a well understood problem that is easy to resolve (add indexes).
 
-My second choice would be **Variant 4**. It offers advantages of a single query in scenarios without indexes, but without volatility of **V2** and **V3**. On the downside, it adds 2 CTE-s and casts all rows to JSON. This creates a large surface area for potential problems and edge cases. Can everything be cast to JSON? What if caller wants to have their own CTE-s? Will all tooling know how to handle JSON results? Etc. Better keep it simple, until the performance really starts hurting.
+My second choice would be **Variant 4**. It offers advantages of a single query in scenarios without indexes, but without volatility of **V2** and **V3**. On the downside, it needs a very complex query, with 2 CTE-s and all rows cast to JSON. This creates a large surface area for potential problems and edge cases. Can everything be cast to JSON? What if caller wants to have their own CTE-s? Will all tooling know how to handle JSON results? Etc. Better keep it simple, until the performance really starts hurting.
