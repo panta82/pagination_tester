@@ -13,7 +13,7 @@ function main() {
   const options = new Options();
   options.loadFromEnv();
 
-  const count = Number(process.argv[2]) || 50;
+  const count = Number(process.argv[2] || '0');
 
   const client = new Client({
     user: options.pg_user,
@@ -30,10 +30,16 @@ function main() {
   return client
     .connect()
     .then(() => {
+      console.log(`Migrating...`);
       return generator.migrate();
     })
     .then(() => {
-      console.log(`Generating ${count} records`);
+      if (!(count > 0)) {
+        console.log(`Called without a number, no records will be generated`);
+        return;
+      }
+
+      console.log(`Generating ${count} records...`);
       return generator.generateData(count);
     })
     .finally(() => {

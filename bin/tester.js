@@ -1,4 +1,5 @@
 const { Client } = require('pg');
+const libDiff = require('diff');
 
 const { Options } = require('../lib/options');
 const { UserStore, Criteria } = require('../lib/user_store');
@@ -25,23 +26,42 @@ function main() {
   return client
     .connect()
     .then(() => {
-      console.log('Testing V1...');
-      return testV1(1);
+      console.log('Testing...');
+      return testPage(1);
     })
     .finally(() => {
       console.log(`Done`);
       return client.end();
     });
 
-  function testV1(page = 1) {
+  function testPage(page = 1) {
     const criteria = new Criteria({ page });
-    const startedAt = new Date();
-    return userStore.listV1(criteria).then(result => {
+    let startedAt = new Date();
+    process.stdout.write(`    [Page ${page}]`);
+
+    return userStore.listV1(criteria).then(result1 => {
       const elapsed = new Date() - startedAt;
-      console.log(`    Page ${page}: ${(elapsed / 1000).toFixed(2)} sec`);
-      if (page < result.total_pages) {
-        return testV1(page + 1);
-      }
+      process.stdout.write(` V1: ${(elapsed / 1000).toFixed(2)} sec`);
+
+      startedAt = new Date();
+      return userStore.listV2(criteria).then(result2 => {
+        const elapsed = new Date() - startedAt;
+        process.stdout.write(` V2: ${(elapsed / 1000).toFixed(2)} sec\n`);
+
+        const json1 = JSON.stringify(result1, null, '  ');
+        const json2 = JSON.stringify(result2, null, '  ');
+        if (json1 !== json2) {
+          const diff = libDiff.diffLines(json1, json2);
+          console.error(`Discrepancy!`);
+          diff.forEach(part => {
+            console.error(part.added ? '+ ' : part.removed ? '- ' : '  ', part.value);
+          });
+        }
+
+        if (page < result2.total_pages) {
+          return testPage(page + 1);
+        }
+      });
     });
   }
 }
