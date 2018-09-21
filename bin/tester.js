@@ -4,7 +4,7 @@ const libDiff = require('diff');
 const { Options } = require('../lib/options');
 const { UserStore, Criteria } = require('../lib/user_store');
 
-const VARIANTS = 3;
+const VARIANTS = 4;
 const TARGET_TESTS = 5;
 
 main().catch(err => {
@@ -29,25 +29,25 @@ function main() {
   return client
     .connect()
     .then(() => {
-      console.log('\nTesting the most basic query, without filters, sorted on PK...');
+      console.log('\nTesting the most basic query, without filters, sort on PK...');
       return performTest(userStore, new Criteria({ sort_field: 'id' }));
     })
     .then(() => {
-      console.log('\nTesting a simple filter, sort on non-indexed column');
+      console.log('\nTesting a simple filter, sort on a non-indexed column');
       return performTest(
         userStore,
         new Criteria({ filter: 'tes', sort_field: 'born_at', sort_direction: 'asc' })
       );
     })
     .then(() => {
-      console.log('\nTesting a simple filter, sort on non-unique index');
+      console.log('\nTesting a simple where condition, sort on a non-unique index');
       return performTest(
         userStore,
         new Criteria({ min_age: 35, sort_field: 'company', sort_direction: 'desc' })
       );
     })
     .then(() => {
-      console.log('\nTesting a complex query, sort on unique index...');
+      console.log('\nTesting a complex query, sort on a unique index...');
       return performTest(
         userStore,
         new Criteria({
