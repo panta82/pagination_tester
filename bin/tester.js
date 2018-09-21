@@ -33,14 +33,21 @@ function main() {
       return performTest(userStore, new Criteria({ sort_field: 'id' }));
     })
     .then(() => {
-      console.log('\nTesting a simple filter, sort by non-unique index');
+      console.log('\nTesting a simple filter, sort on non-indexed column');
+      return performTest(
+        userStore,
+        new Criteria({ filter: 'tes', sort_field: 'born_at', sort_direction: 'asc' })
+      );
+    })
+    .then(() => {
+      console.log('\nTesting a simple filter, sort on non-unique index');
       return performTest(
         userStore,
         new Criteria({ min_age: 35, sort_field: 'company', sort_direction: 'desc' })
       );
     })
     .then(() => {
-      console.log('\nTesting a complex query, sorting on a unique index...');
+      console.log('\nTesting a complex query, sort on unique index...');
       return performTest(
         userStore,
         new Criteria({
@@ -104,7 +111,7 @@ function performTest(userStore, criteriaTemplate) {
 
           // Done with variants
           process.stdout.write('\n');
-          const pageSkip = Math.floor(result.total_pages / TARGET_TESTS);
+          const pageSkip = Math.max(Math.floor(result.total_pages / TARGET_TESTS), 1);
           const nextPage = result.page + pageSkip;
           if (nextPage > result.total_pages) {
             // We are done with pages, exit
